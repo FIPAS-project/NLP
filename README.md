@@ -56,5 +56,22 @@ AI is awesome이란는 문장이 있다고 할 때, Query는 awesome을 vector�
 
 attention functions에서는 주로 additive attention과 dot product attention 두 연산이 주로 선택되어 사용되어지는데, 이 논문에서는 dot-product attetion을 사용하였다.  
 dot-product attetion은 additive attention에 비해 빠르고 공간효율적이라는 장점을 가지고 있다.  
-이 논문에서 기존 방식과 다른 점은 $\sqrt{1}{d_k}$로 scailing하는 점인데, 그 이유는 softmax가 0이랑 가까울 때 gradient가 높고, large positive and large negative value에서 gradient가 낮아 scailing으로 이를 해결하였으며, scailing을 진행하지 않는다면 additive attention보다 성능이 떨어지는 현상이 생긴다고 한다.  
+이 논문에서 기존 방식과 다른 점은 $1 \over \sqrt{d_k}$로 scailing하는 점인데, 그 이유는 softmax가 0이랑 가까울 때 gradient가 높고, large positive and large negative value에서 gradient가 낮아 scailing으로 이를 해결하였으며, scailing을 진행하지 않는다면 additive attention보다 성능이 떨어지는 현상이 생긴다고 한다.  
 
+![img1 daumcdn](https://github.com/sjh9824/NLP/assets/73771922/1bbcfa1d-ab69-41d8-ac29-3d4320b8ef57)
+softmax를 통해 Query와 Key 간에 correlation 정도를 확률 분포로 나타내며 이를 Value matrix와 dot product를 해줌으로써 세 input인 Q, K, V의 correlation matrix가 완성된다.  
+옵션으로는 mask layer가 있으며 이는 원하지 않은 correlation을 masking 할 때 사용한다.  
+
+#### Multi-head Attention  
+하나의 attention function을 사용하는 것보다 Query, Key, Value를 중간중간 linear projection을 통해 중간중간 매핑을 해주어 각 다른 값들을 입력으로 하는, 여러개의 attention function을 사용하는 것이 더 효율적이다.  
+여러 input으로 구해진 output들은 나중에 concatenate되고 linear function을 통해 매핑한다.  
+이런 기법은 CNN이 여러개의 필터를 통해서 convolution output을 구하는 것과 비슷한 효과를 보인다.  
+$$MultiHead(Q,K,V) = Concat(head_1, ..., head_h)W^O$$
+$$where \ head_i = Attention(QW_i^Q,KW_i^K,VW_i^V)$$
+$W_i^Q \in \mathbb{R}^{d_{model} \times d_k},W_i^K \in \mathbb{R}^{d_{model} \times d_k},W_i^V \in \mathbb{R}^{d_{model} \times d_v},W_i^O \in \mathbb{R}^{d_{model} \times hd_v}$  
+또한 header가 8개라고 했을 때, $d_k = d_v=d_{model}/h = 64$로 header의 개수대로 나누어져 dimension이 줄어든다. 이로 인해 single head attention을 했을 때와 비슷한 computation cost를 가지게 된다.  
+
+#### Different use for Multi-head Attention  
+이 논문에선 Transformer를 세가지 다른 방법으로 Multi-head attention을 사용한다.  
+* encoder-decoder attention  
+  ㅇㄴㅇㄴㅇㄴ
