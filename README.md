@@ -35,5 +35,26 @@ Model에서 encoder의 최종 output은 일종의 embedded vector로 사용하�
 이러한 이유 때문에 긴 Sequence의 데이터를 처리 시 제한된 vector로 정보를 담아내기 때문에 정보릐 손실이 커지고 성능의 방목현상이 일어난다는 단점이 있다.  
 
 ## 2.Model Architecture
+![img1 daumcdn](https://github.com/sjh9824/NLP/assets/73771922/55420b20-232b-4424-8b6c-acb702531c77)  
+좋은 성능을 보이는 Neural Sequence Transduction Model은 대부분 위와 같은 형식의 Encoder-Decoder 형식을 띄고 있다.
+Transformer 또한 이 형식을 따라가고 있으며 그 내부는 self-attetion과 fully connectied layer로 이루어져 있다.
 
+### 2-1 Attention  
+<img width="586" alt="img1 daumcdn" src="https://github.com/sjh9824/NLP/assets/73771922/26709cd9-4633-4fb9-b882-d5da466128e5">  
+
+#### Scaled Dot-Production Attention  
+우선 input으로 3가지의 값을 가져간다.  
+Query(Q) , Key(K), Values(V)  
+Query는 물어보는 주체, Key는 물어봄을 당하는 주체, Values는 데이터 값을 의미한다. 이 3가지 값을 통해 수식으로 나타내자면 다음과 같다.  
+$$Attention(Q,K,V) = softmax(\frac{QK^T}{\sqrt{d_k}})V$$  
+여기서 Query q는 어떤 단어를 나타내는 벡터이며, Key k는 그 단어 벡터들을 stack한 matrix이다.  
+****Q와 K는 $d_k$ dimentions, V는 $d_v$ dimentions를 가지는데 논문에서는 $d_k = d_v$로 두고 진행한다.**  
+![img1 daumcdn](https://github.com/sjh9824/NLP/assets/73771922/6c5bf01a-de2b-4cd1-b69c-d5520be475ab)  
+AI is awesome이란는 문장이 있다고 할 때, Query는 awesome을 vector로 가지고 있는 상황에서 $QK^T$는 awesome vector와 key matrix간 dot product를 해줌으로써 Q와 K간 relation Vector를 얻어낸다.  
+이 과정을 Q가 모든 단어를 vector로 한번씩 가지는것을 반복하며 그렇게 얻어낸 relation vector들을 stack하여 matrix로 얻어낸다.  
+실제 과정에서는 Query 또한 단어들을 하나의 matrix로 stack하여 Query와 Key, 즉 matrix끼리 dot product를 진행하게 된다.  
+
+attention functions에서는 주로 additive attention과 dot product attention 두 연산이 주로 선택되어 사용되어지는데, 이 논문에서는 dot-product attetion을 사용하였다.  
+dot-product attetion은 additive attention에 비해 빠르고 공간효율적이라는 장점을 가지고 있다.  
+이 논문에서 기존 방식과 다른 점은 $\sqrt{1}{d_k}$로 scailing하는 점인데, 그 이유는 softmax가 0이랑 가까울 때 gradient가 높고, large positive and large negative value에서 gradient가 낮아 scailing으로 이를 해결하였으며, scailing을 진행하지 않는다면 additive attention보다 성능이 떨어지는 현상이 생긴다고 한다.  
 
