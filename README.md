@@ -69,9 +69,104 @@ softmax를 통해 Query와 Key 간에 correlation 정도를 확률 분포로 나
 $$MultiHead(Q,K,V) = Concat(head_1, ..., head_h)W^O$$
 $$where \ head_i = Attention(QW_i^Q,KW_i^K,VW_i^V)$$
 $W_i^Q \in \mathbb{R}^{d_{model} \times d_k},W_i^K \in \mathbb{R}^{d_{model} \times d_k},W_i^V \in \mathbb{R}^{d_{model} \times d_v},W_i^O \in \mathbb{R}^{d_{model} \times hd_v}$  
-또한 header가 8개라고 했을 때, $d_k = d_v=d_{model}/h = 64$로 header의 개수대로 나누어져 dimension이 줄어든다. 이로 인해 single head attention을 했을 때와 비슷한 computation cost를 가지게 된다.  
+또한 header가 8개라고 했을 때, $d_k = d_v=d_{model}/h = 64$로 header의 개수대로 나누어져 dimension이 줄어든다.(이 논문에선 $d_{model}$을 512로 설정하였다.)  
+이로 인해 single head attention을 했을 때와 비슷한 computation cost를 가지게 된다.  
 
 #### Different use for Multi-head Attention  
-이 논문에선 Transformer를 세가지 다른 방법으로 Multi-head attention을 사용한다.  
+이 논문에선 Transformer를 세가지 다른 방법으로 Multi-head attention layer을 사용한다.  
+* self-attention in encoder  
+  encoder에서 사용되는 self-attention으로 Queries, Keys, Values를 모두 encoder에서 가져온다.
+  encoder의 각 position을 이전 layer의 positions를 참조하여 해당 position과 모든 position의 correlation을 나타낸다.
+  간단히 말하자면, 어떤 입력 문장의 해당 position의 한 단어가 모든 단어와 어떤 correlation을 가지고 있는지 나타나게 된다.
+
+* self-attention in decoder  
+  self-attention in encoder와 같은 방식으로 동작하나, 이 layer에서는 해당 position의 단어가 masking vector를 사용하여 그 이전의 단어 벡터만 참조한다.
+  이는 이후에 나올 단어 벡터를 참조하여 학습하는 것은 일종의 치팅이며, sequence model의 auto-regressive property를 보존하기 위함이다.
+
 * encoder-decoder attention  
-  ㅇㄴㅇㄴㅇㄴ
+  decoder에서 self-attention 다음으로 사용되는 layer로 queries는 이전 decoder layer에서, keys와 values는 encoder의 output에서 가져온다.
+  decoder의 모든 postion vector가 encoder의 position vector를 참조하게 되어 decoder sequence vector와 encoder sequence vector의 correlation vector를 나타내고 학습한다.
+
+### 2-2 Position-Wise Feed-Forward Networks  
+attention layer 이후 fully connected feed-forward network가 사용된다.  
+$$FFN(x) = \max{(0,xW_1+b_1)}W_2 + b_2$$  
+
+### 2-3 Embedding and Softmax  
+다른 sequence model 처럼 input과 output token을 $d_{model}$ 차원의 vector로 embedding하는 과정을 거친다.  
+또한 보통 다음 token을 예측하기 위해 decoder output에 학습된 linear transformation 과 softmax function을 사용하여 변환한다.  
+이 논문에서는 embedding layer와 pre-softmax linear transformation에 같은 weight matrix를 공유한다. 
+
+### 2-4 Positional Encoding  
+이 논문에서 제안하는 model은 다른 model과는 달리 recurrence나 convolution을 사용하지 않고 오로지 attention만 이용하여 model을 구축한다.  
+이에 따라, sequence에 대한 정보를 따로 받아야 했고 해당 역할을 이 논문에서 담당한 기법이 position encoding이다.  
+encoding과 decoding 블록 아래에 위치 시켜 embedding된 input과 output이 이 position encoding을 거쳐 encoder와 decoder에 들어가게 된다.  
+이 논문에서 어떤 방식으로 position encoding을 진행했는지 알아보기 전에 position encoding에 대해 더 자세하게 알아볼 필요가 있다고 생각했다.  
+
+#### About P.E  
+언어를 이해하는 어순은 상당히 중요한 역할을 한다고 생각한다.  
+그렇기에 언어 모델에 어순에 대한 정보는 빼놓을 수 없다고 생각한다.  
+이 논문의 저자가 선택한 방식은 attention layer에 들어가기 전 입력 값으로 주어질 단어 vector 안에 positional encoding 정보를 주는 것이었다.  
+그럼 어떻게 어순에 대한 정보를 주는지 그 방법에 대해 두 가지 방법과 각 방법의 한계를 다음과 같이 제시한다.  
+* 데이터에 0~1 사이 label 부여. (첫번째 단어 : 0 , 마지막 단어 : 1)
+  ex) I love you : I 0 / love 0.5 / you 1
+  한계점: input의 총 크기를 알 수 없다. 따라서 delta 값이 일정한 의미를 가지지 못한다.(delta = 단어의 label 간 차이)
+
+* 각 time-step 마다 선형적 숫자 할당
+  ex) I love you : I 1 / love 2 / you 3
+  총 input 크기에 따라 가변적이며 delta가 일정해진다.  
+  한계점: 숫자가 매우 커질 수 있음. 학습 데이터보다 큰 값이 입력 값으로 들어게 될 때 발생 모델의 일반화가 어려워짐.
+
+Positional Encoding에 대해 참고한 글의 저자에 따르면 이상적인 모델은 다음과 같은 기준을 충족 시켜야 한다고 말했다.  
+1. 각 time-step마다 하나의 유일한 encoding 값을 출력.
+2. 서로 다른 길이의 문장에 있어 두 time-step간 거리는 일정.
+3. 모델에 대한 일반화가 가능해야 함. 더 긴 길이의 문장이 나왔을 때 적용이 가능해야 함. 즉, 순서를 나타내는 값들이 특정 범위 내에 있어야 한다.
+4. 하나의 ket 값처럼 결정되어야 한다. 매번 다른 값이 아닌 일정한 값이 출력되어야 한다.
+
+이 논문의 저자가 사용한 encoding 기술은 위의 기준을 모두 충족시킨다.  
+
+#### How P.E used in this paper  
+이 논문에서 Position encoding 방식으로 sin과 cosine 함수를 사용한다. 다음은 이 논문에서 정의한 P.E 수식이다.  
+$$PE_{(pos,2i)}=\sin(pos/10000^{2i/d_{model}})$$
+$$PE_{(pos,2i+1)}=\cos(pos/10000^{2i/d_{model}})$$  
+여기서 pos는 position, i는 dimension을 의미한다.  
+위 수식을 이해한 방식대로 잠깐 바꿔보고자 한다.  
+먼저 t를 한 input문장의 위치라 한다. $R^d$(d는 encoding dimension.에 속하는 $\vec{p_t}$를 이에 상응하는 encoding 값이라 할 때, $f:N \to R^d$는 출력 벡터 $\vec{p_t}$를 만들어 내는 함수이다.  
+ $\vec{p_t}$는 다음과 같이 정의한다.  
+ 
+$${\vec{p_t}}^{(i)}={f(t)}^{(i)}:=
+\begin{cases}
+\sin(\omega_k.t), & \mbox{if }i\mbox{ = 2k} \\
+\cos(\omega_k.t), & \mbox{if }i\mbox{ = 2k+1}
+\end{cases}
+$$
+
+$$\omega_k = \frac{1}{10000^{2k/d}}$$  
+
+이러한 함수의 정의에 따르자면, vector의 dimension에 따라 frequency가 줄어든다.(sin/cos의 주기가 길어짐)  
+따라서 파장에서 $2\pi$에서 $10000*2\pi$까지의 기하 수열을 보인다.  
+또한 positional embedding으로 들어가는 $\vec{p_t}$에 대해 각 frequency에서 sin,cos 쌍이 들어가 있음을 알 수 있다.(d는 2의 배수)  
+
+$$
+\vec{p_t} = 
+\begin{bmatrix}
+\sin(\omega_1.t) \\
+\cos(\omega_1.t) \\
+\\
+\\
+\sin(\omega_2.t) \\
+\cos(\omega_2.t) \\
+\\
+\\
+\vdots
+\\
+\\
+\sin(\omega_{d/2}.t) \\
+\cos(\omega_{d/2}.t) \\
+\end{bmatrix}
+_{d \times 1}
+$$
+
+위와 같이 $\vec{p_t}$는 cos과 sin의 순서쌍으로 그 position에 대한 정보를 담게 된다.  
+
+## 3.Why Self-Attention  
+self-attention이 RNN이나 Convolution보다 좋은지 3가지 양상으로 나누어 설명한다.  
