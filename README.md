@@ -193,17 +193,20 @@ self-attention은 각 token들을 모든 token들과 참조하여 그 correlatio
 논문에서 진행한 실험에 대해 간단하게 살펴보았다.  
 ### 4.1 Machine Translation  
 ![img1 daumcdn](https://github.com/sjh9824/NLP_Attention-is-all-you-need-review/assets/73771922/6058073f-bf07-48ef-af34-48fb6f4349ec)  
+
 먼저 English to German Translation task에 대해서 다른 모델과의 성능 비교표 이다.  
 BLEU는 기계 번역 결과와 사람 번역 결과의 유사도를 비교하는 측정 방법이다.  
 표에서 확인 할 수 있듯이, 다른 모델에 비해 Transformer가 제일 높은 성능을 보임과 동시에 training cost 또한 낮은 것을 확인 할 수 있었다.  
   
 ### 4.2 Model Variation  
 <img width="568" alt="img1 daumcdn" src="https://github.com/sjh9824/NLP_Attention-is-all-you-need-review/assets/73771922/ec60abda-4181-4314-accf-160e56b83e42">  
+
 모델의 여러 조건들을 변경해가면서 성능에 어떠한 영향을 주는지 확인하였다.  
 (B)에서 key size인 $d_k$를 너무 줄이면 quality가 안좋아지며 (C)에서 큰 모델이 더 성능이 좋으며, (D) drop-out이 오버피팅을 피하는데 도움이 된다는 것을 확인 할 수 있었다.  
 
 ### 4.3 English Constituency Parsing  
 <img width="466" alt="img1 daumcdn" src="https://github.com/sjh9824/NLP_Attention-is-all-you-need-review/assets/73771922/e28456f3-56ea-4acb-87a1-3cf58a5e2dd4">  
+
 Transformer가 다른 task에서도 잘 동작하는지 보기 위해 English Constituency Parsing task에도 적용해본 결과이다.  
 해당 Task는 어떤 단어가 문법적으로 어디에 속하는지 분류하는 Task로 해당 Task에 맞게 tuning 하지 않았음에도 좋은 성능을 보인다.  
 
