@@ -170,3 +170,47 @@ $$
 
 ## 3.Why Self-Attention  
 self-attention이 RNN이나 Convolution보다 좋은지 3가지 양상으로 나누어 설명한다.  
+![img1 daumcdn](https://github.com/sjh9824/NLP_Attention-is-all-you-need-review/assets/73771922/6508fe4e-deb1-4c25-82a0-ce15d7634947)  
+
+#### 1)The total computational complexity per layer  
+위 표에서 알 수 있듯이, self-attentino과 RNN을 비교했을 때 sequence lenth n이 representation dimensionality d보다 작아야지 complexity가 self-attention이 RNN보다 낮아짐을 볼 수 있다.  
+하지만 보통의 경우 n이 d보다 작기 때문에 self-attetion의 complecity가 더 작다고 볼 수 있다.  
+
+#### 2)The amount of computation that can be parallelized  
+RNN은 input을 순차적으로 받아 학습 할 수 밖에 없다. 총 n번 RNN cell을 거치게 되는 반면, self-attention layer는 inpuy의 모든 position 값들을 연결하여 한번에 처리하기 때문에  
+sequential operation이 O(1)을 가지게 되고 이는 parallel system에서 유리하게 사용된다.  
+
+#### 3)The path length between long-range dependencies in the network    
+long-range dependencies란 말그대로 position상 멀리 떨어져있는 단어들 간 dependency를 말하고 이를 학습하는 것은 sequence transduction task에서 key challenge에 해당된다.  
+이러한 long-dependency를 잘 배우기 위해서 length of paths가 큰 영향을 미친다.  
+![img1 daumcdn](https://github.com/sjh9824/NLP_Attention-is-all-you-need-review/assets/73771922/bfe6a251-d1e0-4a19-8d8f-84cc9dd71921)  
+먼저 length of paths란 forward와 backward signals간의 길이를 말하며, 위의 그림을 예시로 path lengths는 한국어 tokens와 영어 tokens 길이를 말하는 것이다.  
+또한 maximum path length는 I와 사랑해 사이의 길이 즉, encoder sequence length + decoder sequence length = 6이 된다.  
+input과 output sequence 사이 조합 간 paths가 짧을수록 long-range dependencies를 더 잘 학습할 수 있고 따라서 논문에서 이러한 maximum path lengths도 비교하여 self_attention이 더 좋음을 증명한다.  
+self-attention은 각 token들을 모든 token들과 참조하여 그 correlation information을 구해서 더해주기 때문에 maximum path length를 O(1)이라고 볼 수 있다.  
+
+## 4.Experiments  
+논문에서 진행한 실험에 대해 간단하게 살펴보았다.  
+### 4.1 Machine Translation  
+![img1 daumcdn](https://github.com/sjh9824/NLP_Attention-is-all-you-need-review/assets/73771922/6058073f-bf07-48ef-af34-48fb6f4349ec)  
+먼저 English to German Translation task에 대해서 다른 모델과의 성능 비교표 이다.  
+BLEU는 기계 번역 결과와 사람 번역 결과의 유사도를 비교하는 측정 방법이다.  
+표에서 확인 할 수 있듯이, 다른 모델에 비해 Transformer가 제일 높은 성능을 보임과 동시에 training cost 또한 낮은 것을 확인 할 수 있었다.  
+  
+### 4.2 Model Variation  
+<img width="568" alt="img1 daumcdn" src="https://github.com/sjh9824/NLP_Attention-is-all-you-need-review/assets/73771922/ec60abda-4181-4314-accf-160e56b83e42">  
+모델의 여러 조건들을 변경해가면서 성능에 어떠한 영향을 주는지 확인하였다.  
+(B)에서 key size인 $d_k$를 너무 줄이면 quality가 안좋아지며 (C)에서 큰 모델이 더 성능이 좋으며, (D) drop-out이 오버피팅을 피하는데 도움이 된다는 것을 확인 할 수 있었다.  
+
+### 4.3 English Constituency Parsing  
+<img width="466" alt="img1 daumcdn" src="https://github.com/sjh9824/NLP_Attention-is-all-you-need-review/assets/73771922/e28456f3-56ea-4acb-87a1-3cf58a5e2dd4">  
+Transformer가 다른 task에서도 잘 동작하는지 보기 위해 English Constituency Parsing task에도 적용해본 결과이다.  
+해당 Task는 어떤 단어가 문법적으로 어디에 속하는지 분류하는 Task로 해당 Task에 맞게 tuning 하지 않았음에도 좋은 성능을 보인다.  
+
+
+## 5.마치며  
+NLP에 무작정 관심이 있고 공부하고 싶다는 패기로 대학원에 들어와 첫 리뷰해본 논문이다.  
+이 논문이 얼마나 대단한지 어떤 원리인지도 모른채 무작정 논문, 구글, 유튜브 등 몇일동안 서칭하면서 이해하는데 이해가 조금씩 되면서 이런 생각을 하는게 참 대단해보인다.  
+나도 저렇게 연구할 수 있도록 더 공부하고 연구해야겠다는 생각이든다.  
+
+사실 완벽히 다 이해한것은 아니지만 이제 지금까지 이해한것을 바탕으로 직접 코드로 구현해보면서 미처 이해하지 못한 부분이나 발견하지 못한 부분에 대해 학습하려고 한다.  
